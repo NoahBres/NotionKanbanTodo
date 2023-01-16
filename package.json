@@ -25,10 +25,19 @@
       "description": "Notion API Token",
       "required": true,
       "type": "password"
+    },
+    {
+      "name": "databaseId",
+      "title": "Notion Database ID",
+      "description": "ID for the specific notion database",
+      "required": true,
+      "type": "textfield"
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.45.3"
+    "@notionhq/client": "^2.2.3",
+    "@raycast/api": "^1.45.3",
+    "@raycast/utils": "^1.4.15"
   },
   "devDependencies": {
     "@types/node": "18.8.3",

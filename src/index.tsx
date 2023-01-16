@@ -1,19 +1,16 @@
 import { ActionPanel, Detail, List, Action, Icon, getPreferenceValues, openExtensionPreferences } from "@raycast/api";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CreateTodoAction } from "./CreateTodoForm";
+import { setNotionKey } from "./notion";
+import { Todo, useTodos } from "./useTodos";
 
-export interface Todo {
-  title: string;
-  isCompleted: boolean;
-}
-
-interface Preferences {
+export interface Preferences {
   notionToken: string;
+  databaseId: string;
 }
 
-export default function Command() {
+function PreferenceGuard(props: { children: React.ReactNode }) {
   const preferences = getPreferenceValues<Preferences>();
-  console.log(preferences);
 
   if (!preferences.notionToken) {
     return (
@@ -28,52 +25,68 @@ export default function Command() {
     );
   }
 
-  const [todos, setTodos] = useState<Todo[]>([]);
+  useEffect(() => {
+    setNotionKey(preferences.notionToken);
+  }, [preferences.notionToken]);
+
+  return <>{props.children}</>;
+}
+
+export default function Command() {
+  const { data: todos, isLoading: todosIsLoading, dispatch: dispatchTodo } = useTodos();
+  // const [todos, setTodos] = useState<Todo[]>([]);
 
   function handleCreate(todo: Todo) {
-    const newTodos = [...todos, todo];
-    setTodos(newTodos);
+    // const newTodos = [...todos, todo];
+    // setTodos(newTodos);
   }
 
-  function handleToggle(index: number) {
-    const newTodos = [...todos];
-    newTodos[index].isCompleted = !newTodos[index].isCompleted;
-    setTodos(newTodos);
+  function handleToggle(todo: Todo) {
+    // const newTodos = [...todos];
+    // newTodos[index].isCompleted = !newTodos[index].isCompleted;
+    // setTodos(newTodos);
+    // mutateTodo(fetch(), { optimisticUpdate(data) {
+    //   return data;
+    // }}).then().catch();
+    dispatchTodo({ action: "toggleTodo", id: todo.id, isCompleted: !todo.isCompleted });
   }
 
   function handleDelete(index: number) {
-    const newTodos = [...todos];
-    newTodos.splice(index, 1);
-    setTodos(newTodos);
+    // const newTodos = [...todos];
+    // newTodos.splice(index, 1);
+    // setTodos(newTodos);
   }
 
   return (
-    <List
-      actions={
-        <ActionPanel>
-          <CreateTodoAction onCreate={handleCreate} />
-        </ActionPanel>
-      }
-    >
-      {todos.map((todo, index) => (
-        <List.Item
-          key={index}
-          title={todo.title}
-          icon={todo.isCompleted ? Icon.Checkmark : Icon.Circle}
-          actions={
-            <ActionPanel>
-              <ActionPanel.Section>
-                <ToggleTodoAction todo={todo} onToggle={() => handleToggle(index)} />
-              </ActionPanel.Section>
-              <ActionPanel.Section>
-                <CreateTodoAction onCreate={handleCreate} />
-                <DeleteTodoAction onDelete={handleDelete} />
-              </ActionPanel.Section>
-            </ActionPanel>
-          }
-        />
-      ))}
-    </List>
+    <PreferenceGuard>
+      <List
+        actions={
+          <ActionPanel>
+            <CreateTodoAction onCreate={handleCreate} />
+          </ActionPanel>
+        }
+        isLoading={!todos || todosIsLoading}
+      >
+        {(todos ?? []).map((todo) => (
+          <List.Item
+            key={todo.id}
+            title={todo.title}
+            icon={todo.isCompleted ? Icon.Checkmark : Icon.Circle}
+            actions={
+              <ActionPanel>
+                <ActionPanel.Section>
+                  <ToggleTodoAction todo={todo} onToggle={() => handleToggle(todo)} />
+                </ActionPanel.Section>
+                <ActionPanel.Section>
+                  <CreateTodoAction onCreate={handleCreate} />
+                  <DeleteTodoAction onDelete={handleDelete} />
+                </ActionPanel.Section>
+              </ActionPanel>
+            }
+          />
+        ))}
+      </List>
+    </PreferenceGuard>
   );
 }
 
